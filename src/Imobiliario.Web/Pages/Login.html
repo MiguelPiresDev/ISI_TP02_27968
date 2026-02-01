@@ -1,0 +1,121 @@
+﻿<!DOCTYPE html>
+<html lang="pt">
+<head>
+	<meta charset="UTF-8">
+	<title>Login - Imobiliário</title>
+	<style>
+		body {
+			font-family: 'Segoe UI', sans-serif;
+			background-color: #f0f2f5;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+			margin: 0;
+		}
+
+		.card {
+			background: white;
+			padding: 40px;
+			border-radius: 10px;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+			width: 350px;
+			text-align: center;
+		}
+
+		h2 {
+			margin-bottom: 20px;
+			color: #333;
+		}
+
+		input {
+			width: 100%;
+			padding: 12px;
+			margin: 10px 0;
+			border: 1px solid #ddd;
+			border-radius: 5px;
+			box-sizing: border-box;
+		}
+
+		button {
+			width: 100%;
+			padding: 12px;
+			background-color: #007bff;
+			color: white;
+			border: none;
+			border-radius: 5px;
+			font-size: 16px;
+			cursor: pointer;
+			transition: 0.3s;
+		}
+
+			button:hover {
+				background-color: #0056b3;
+			}
+
+		a {
+			color: #666;
+			text-decoration: none;
+			display: block;
+			margin-top: 15px;
+			font-size: 14px;
+		}
+	</style>
+</head>
+<body>
+	<div class="card">
+		<h2>Bem-vindo</h2>
+		<input type="text" id="username" placeholder="Utilizador">
+		<input type="password" id="password" placeholder="Password">
+		<button onclick="login()">Entrar</button>
+		<a href="Register.html">Criar nova conta</a>
+	</div>
+
+	<script>
+		async function login() {
+			const userField = document.getElementById('username');
+			const passField = document.getElementById('password');
+
+			if (!userField.value || !passField.value) { alert("Preenche os campos."); return; }
+
+			const dados = { Username: userField.value, Password: passField.value };
+
+			try {
+                const response = await fetch('https://imobiliario-api-pires-hmh8ebhbhwf7b4eh.francecentral-01.azurewebsites.net/api/Login', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(dados)
+				});
+
+				if (response.ok) {
+					const json = await response.json();
+
+					let rawRole = json.Role || json.role || "";
+					let roleLimpa = String(rawRole).trim().toLowerCase();
+
+					if (roleLimpa === "owner" || roleLimpa === "client") {
+
+						// --- GUARDAR DADOS ---
+						localStorage.setItem('token', json.Token || json.token);
+						localStorage.setItem('role', roleLimpa);
+						localStorage.setItem('userId', json.UserID || json.userID);
+
+						if (json.OwnerID) {
+							localStorage.setItem('ownerId', json.OwnerID);
+						}
+
+						window.location.href = 'ListProperty.html';
+					} else {
+						alert("Login OK, mas Role desconhecida: " + rawRole);
+					}
+				} else {
+					alert('Login falhou. Verifica user/pass.');
+				}
+			} catch (e) {
+				console.error(e);
+				alert("Erro de ligação. A API está a correr?");
+			}
+		}
+	</script>
+</body>
+</html>

@@ -1,0 +1,229 @@
+﻿<!DOCTYPE html>
+<html lang="pt">
+<head>
+	<meta charset="UTF-8">
+	<title>Registar Imóvel</title>
+	<style>
+		body {
+			font-family: 'Segoe UI', sans-serif;
+			background-color: #f0f2f5;
+			padding: 20px;
+			display: flex;
+			justify-content: center;
+		}
+
+		.card {
+			background: white;
+			padding: 30px;
+			border-radius: 12px;
+			width: 500px;
+			box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+		}
+
+		h2 {
+			text-align: center;
+			color: #333;
+			margin-top: 0;
+		}
+
+		label {
+			font-weight: 600;
+			font-size: 14px;
+			display: block;
+			margin-top: 15px;
+			color: #444;
+		}
+
+		input, select, textarea {
+			width: 100%;
+			padding: 10px;
+			margin-top: 5px;
+			border: 1px solid #ccc;
+			border-radius: 6px;
+			box-sizing: border-box;
+			font-size: 14px;
+		}
+
+		.btn-gps {
+			background: #17a2b8;
+			color: white;
+			border: none;
+			padding: 8px;
+			width: 100%;
+			margin-top: 5px;
+			cursor: pointer;
+			border-radius: 6px;
+			font-weight: bold;
+		}
+
+		.btn-save {
+			background: #28a745;
+			color: white;
+			border: none;
+			padding: 12px;
+			width: 100%;
+			margin-top: 25px;
+			cursor: pointer;
+			border-radius: 6px;
+			font-size: 16px;
+			font-weight: bold;
+		}
+
+		.status {
+			font-size: 13px;
+			margin-top: 5px;
+			display: block;
+			text-align: center;
+			min-height: 20px;
+		}
+
+		.link-back {
+			display: block;
+			text-align: center;
+			margin-top: 15px;
+			text-decoration: none;
+			color: #007bff;
+			font-size: 14px;
+		}
+	</style>
+</head>
+<body>
+
+	<div class="card">
+		<h2>🏡 Nova Propriedade</h2>
+
+		<label>Título do Anúncio:</label>
+		<input type="text" id="propName" placeholder="Ex: Apartamento T3 com Vista Rio">
+
+		<label>Morada Completa:</label>
+		<input type="text" id="address" placeholder="Ex: Avenida da Liberdade, Barcelos">
+		<button class="btn-gps" onclick="validarGPS()">📍 Validar Localização</button>
+		<span id="gpsStatus" class="status"></span>
+
+		<input type="hidden" id="lat"><input type="hidden" id="lon">
+
+		<div style="display:flex; gap:15px;">
+			<div style="flex:1">
+				<label>Tipo:</label>
+				<select id="type">
+					<option value="Apartamento">Apartamento</option>
+					<option value="Moradia">Moradia</option>
+					<option value="Terreno">Terreno</option>
+					<option value="Loja">Loja</option>
+				</select>
+			</div>
+			<div style="flex:1">
+				<label>Ano Constr.:</label>
+				<input type="number" id="year" value="2024">
+			</div>
+		</div>
+
+		<div style="display:flex; gap:15px;">
+			<div style="flex:1">
+				<label>Área (m²):</label>
+				<input type="number" id="area" placeholder="120">
+			</div>
+			<div style="flex:1">
+				<label>Preço (€):</label>
+				<input type="number" id="price" placeholder="150000">
+			</div>
+		</div>
+
+		<label>Descrição:</label>
+		<textarea id="desc" rows="3" placeholder="Descrição..."></textarea>
+
+		<div id="status-msg" style="color: red; text-align: center; margin-top: 10px; font-weight: bold;"></div>
+
+		<button class="btn-save" onclick="gravar()">💾 Registar Imóvel</button>
+		<a href="ListProperty.html" class="link-back">Voltar à Lista</a>
+	</div>
+
+	<script>
+		function lerCampo(id) {
+			const elemento = document.getElementById(id);
+			if (!elemento) {
+				console.error("ERRO CRÍTICO: Não encontrei o campo com id='" + id + "' no HTML.");
+				document.getElementById('status-msg').innerText = "Erro: Falta o campo '" + id + "' no HTML!";
+				return null;
+			}
+			return elemento.value;
+		}
+
+		let role = localStorage.getItem('role');
+		role = String(role || "").trim().toLowerCase();
+		if (role === 'client') {
+			alert("Apenas proprietários podem aceder a esta página.");
+			window.location.href = "ListProperty.html";
+		}
+
+        const API_URL = "https://imobiliario-api-pires-hmh8ebhbhwf7b4eh.francecentral-01.azurewebsites.net/api/Property";
+
+		async function validarGPS() {
+			const addr = lerCampo('address');
+			const status = document.getElementById('gpsStatus');
+			if (!addr) { alert("Escreve a morada."); return; }
+
+			status.innerText = "🔍 A pesquisar...";
+			try {
+				const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${addr}`);
+				const data = await res.json();
+				if (data.length > 0) {
+					document.getElementById('lat').value = data[0].lat;
+					document.getElementById('lon').value = data[0].lon;
+					status.innerText = `✅ GPS OK`; status.style.color = "green";
+				} else {
+					status.innerText = "❌ Morada não encontrada."; status.style.color = "red";
+				}
+			} catch (e) { status.innerText = "Erro mapas."; }
+		}
+
+		async function gravar() {
+			const nome = lerCampo('propName');
+			const morada = lerCampo('address');
+			const preco = lerCampo('price');
+
+			if (nome === null || morada === null || preco === null) return;
+
+			const novaCasa = {
+				Name: nome,
+				State: true,
+				Address: morada,
+				Type: lerCampo('type'),
+				YearBuilt: parseInt(lerCampo('year')) || 2024,
+				Area: parseFloat(lerCampo('area')) || 0,
+				Price: parseFloat(preco) || 0,
+				Description: lerCampo('desc'),
+				OwnerID: localStorage.getItem('ownerId'),
+				Latitude: document.getElementById('lat').value ? parseFloat(document.getElementById('lat').value) : null,
+				Longitude: document.getElementById('lon').value ? parseFloat(document.getElementById('lon').value) : null
+			};
+
+			if (!novaCasa.Address || novaCasa.Price <= 0) {
+				alert("Preenche Título, Morada e Preço."); return;
+			}
+
+			const token = localStorage.getItem('token');
+			try {
+				const response = await fetch(API_URL, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'Authorization': 'Bearer ' + token
+					},
+					body: JSON.stringify(novaCasa)
+				});
+
+				if (response.ok) {
+					alert("SUCESSO! Imóvel criado.");
+					window.location.href = "ListProperty.html";
+				} else {
+					const erroTexto = await response.text();
+					alert("❌ ERRO DO SERVIDOR:\n" + erroTexto);
+				}
+			} catch (error) {
+				alert("Erro de ligação (Verifica a porta 44384).");
+			}
+		}
+	</script>
+</body>
+</html>

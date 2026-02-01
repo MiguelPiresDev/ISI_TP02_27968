@@ -1,0 +1,215 @@
+﻿<!DOCTYPE html>
+<html lang="pt">
+<head>
+	<meta charset="UTF-8">
+	<title>Criar Conta</title>
+	<style>
+		body {
+			font-family: 'Segoe UI', sans-serif;
+			background: #f4f7f6;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+			margin: 0;
+		}
+
+		.container {
+			text-align: center;
+			width: 100%;
+			max-width: 500px;
+		}
+
+		.role-selection {
+			display: flex;
+			gap: 20px;
+			justify-content: center;
+		}
+
+		.role-card {
+			background: white;
+			width: 180px;
+			height: 180px;
+			border-radius: 12px;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			cursor: pointer;
+			box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+			transition: 0.3s;
+			border: 3px solid transparent;
+		}
+
+			.role-card:hover {
+				transform: translateY(-5px);
+				box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+			}
+
+			.role-card h3 {
+				margin: 10px 0 5px 0;
+				color: #333;
+			}
+
+			.role-card p {
+				font-size: 12px;
+				color: #777;
+				margin: 0;
+			}
+
+		.icon {
+			font-size: 50px;
+		}
+
+		.owner-card:hover {
+			border-color: #007bff;
+		}
+
+		.client-card:hover {
+			border-color: #28a745;
+		}
+
+		.form-container {
+			display: none;
+			background: white;
+			padding: 40px;
+			border-radius: 12px;
+			box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+			text-align: left;
+		}
+
+		.badge {
+			display: inline-block;
+			padding: 5px 10px;
+			border-radius: 4px;
+			color: white;
+			font-size: 12px;
+			font-weight: bold;
+			margin-bottom: 15px;
+		}
+
+		input {
+			width: 100%;
+			padding: 12px;
+			margin-bottom: 10px;
+			border: 1px solid #ddd;
+			border-radius: 6px;
+			box-sizing: border-box;
+		}
+
+		.btn-submit {
+			width: 100%;
+			padding: 12px;
+			background: #333;
+			color: white;
+			border: none;
+			border-radius: 6px;
+			font-weight: bold;
+			cursor: pointer;
+			margin-top: 10px;
+		}
+
+			.btn-submit:hover {
+				background: #000;
+			}
+
+		.btn-back {
+			background: none;
+			border: none;
+			color: #666;
+			cursor: pointer;
+			margin-top: 10px;
+			width: 100%;
+		}
+	</style>
+</head>
+<body>
+
+	<div class="container">
+		<div id="step1">
+			<h2 style="margin-bottom: 30px; color:#333">Quem és tu?</h2>
+			<div class="role-selection">
+				<div class="role-card owner-card" onclick="escolherRole('Owner')">
+					<span class="icon">🔑</span>
+					<h3>Proprietário</h3>
+					<p>Quero Vender ou Arrendar</p>
+				</div>
+				<div class="role-card client-card" onclick="escolherRole('Client')">
+					<span class="icon">🏠</span>
+					<h3>Cliente</h3>
+					<p>Quero Procurar Casa</p>
+				</div>
+			</div>
+		</div>
+
+		<div id="step2" class="form-container">
+			<h2 style="margin-top:0">Criar Conta</h2>
+			<div id="roleBadge" class="badge"></div>
+			<label>Dados Pessoais:</label>
+			<input type="text" id="name" placeholder="Nome Completo">
+			<input type="text" id="phone" placeholder="Telemóvel (ex: 910000000)">
+			<input type="email" id="email" placeholder="Email">
+			<hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
+			<label>Dados de Login:</label>
+			<input type="text" id="user" placeholder="Username">
+			<input type="password" id="pass" placeholder="Password">
+			<button class="btn-submit" onclick="registar()">✅ Finalizar Registo</button>
+			<button class="btn-back" onclick="voltar()">← Voltar atrás</button>
+		</div>
+	</div>
+
+	<script>
+        const API_URL = "https://imobiliario-api-pires-hmh8ebhbhwf7b4eh.francecentral-01.azurewebsites.net/api/Register";
+		let roleEscolhida = "";
+
+		function escolherRole(role) {
+			roleEscolhida = role;
+			document.getElementById('step1').style.display = 'none';
+			document.getElementById('step2').style.display = 'block';
+			const badge = document.getElementById('roleBadge');
+			if (role === 'Owner') {
+				badge.innerText = "MODO PROPRIETÁRIO"; badge.style.backgroundColor = "#007bff";
+			} else {
+				badge.innerText = "MODO CLIENTE"; badge.style.backgroundColor = "#28a745";
+			}
+		}
+
+		function voltar() {
+			document.getElementById('step1').style.display = 'block';
+			document.getElementById('step2').style.display = 'none';
+			roleEscolhida = "";
+		}
+
+		async function registar() {
+			const dados = {
+				Username: document.getElementById('user').value,
+				Password: document.getElementById('pass').value,
+				Role: roleEscolhida,
+				Name: document.getElementById('name').value,
+				Phone: document.getElementById('phone').value,
+				Email: document.getElementById('email').value
+			};
+
+			if (!dados.Username || !dados.Password || !dados.Name) { alert("Preenche os dados!"); return; }
+
+			try {
+				const response = await fetch(API_URL, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(dados)
+				});
+
+				if (response.ok) {
+					alert("Conta criada com sucesso! Podes fazer Login.");
+					window.location.href = "Login.html";
+				} else {
+					const erro = await response.json();
+					alert("Erro: " + (erro.Message || "Falha ao criar conta."));
+				}
+			} catch (e) {
+				alert("Erro de ligação API (44384).");
+			}
+		}
+	</script>
+</body>
+</html>
